@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            transition: background-color 0.3s;
+            background: linear-gradient(to right, #74ebd5, #ACB6E5);
+            --text-color-light: rgb(0, 0, 0);
+            --text-color-dark: #ffffff;
+        }
+
+        body.dark-mode {
+            background: linear-gradient(to right, #434343, #000000);
+        }
+
+        #title {
+            font-size: 2em;
+            color: #3498db;
+            margin-bottom: 20px;
+        }
+
+        #board {
+            display: grid;
+            grid-template-columns: repeat(3, 100px);
+            grid-gap: 10px;
+            border-radius: 15px;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+        }
+
+        .cell {
+            width: 100px;
+            height: 100px;
+            border: none;
+            font-size: 2em;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            transition: background-color 0.3s;
+        }
+
+        .cell:hover {
+            background: rgba(255, 255, 255, 0.4);
+        }
+
+        #dialog {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(255, 255, 255, 0.9);
+            padding: 20px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.2);
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+            text-align: center;
+        }
+
+        #dialog h2 {
+            margin-top: 0;
+            font-size: 1.5em;
+            color: #3498db;
+        }
+
+        #closeBtn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            cursor: pointer;
+            font-size: 1em;
+            color: #3498db;
+            background: none;
+            border: none;
+        }
+
+        #resetBtn,
+        #clearBtn,
+        #undoBtn {
+            margin-top: 15px;
+            cursor: pointer;
+            padding: 10px;
+            background: #3498db;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            font-size: 1em;
+            transition: background-color 0.3s;
+        }
+
+        #resetBtn:hover,
+        #clearBtn:hover,
+        #undoBtn:hover {
+            background: #2980b9;
+        }
+
+        #modeButton {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            cursor: pointer;
+            font-size: 1.5em;
+            color: #fff;
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            border-radius: 25px;
+            padding: 10px;
+            transition: background-color 0.3s;
+        }
+
+        #modeButton:hover {
+            background: rgba(255, 255, 255, 0.4);
+        }
+
+        #waving-icon {
+            font-size: 2em;
+            margin: 10px;
+            animation: wave 2s infinite;
+        }
+
+        @keyframes wave {
+
+            0%,
+            100% {
+                transform: rotate(0deg);
+            }
+
+            25%,
+            75% {
+                transform: rotate(-20deg);
+            }
+
+            50% {
+                transform: rotate(20deg);
+            }
+        }
+
+        #result {
+            color: var(--text-color-light);
+            font-size: large;
+        }
+
+        body.dark-mode {
+            --text-color: var(--text-color-dark);
+        }
+
+        body.dark-mode #result {
+            color: var(--text-color);
+        }
+    </style>
+    <title>Rock, Paper, Scissors</title>
+</head>
+
+<body>
+
+    <div id="title">Rock, Paper, Scissors</div>
+
+    <div id="board">
+        <button class="cell" onclick="playGame('🪨')">🪨</button>
+        <button class="cell" onclick="playGame('📄')">📄</button>
+        <button class="cell" onclick="playGame('✂️')">✂️</button>
+    </div>
+    <div id="result"></div>
+    <div id="dialog">
+        <button id="closeBtn" onclick="closeDialog()">×</button>
+        <h2></h2>
+        <button id="resetBtn" onclick="resetGame()">Play Again</button>
+    </div>
+
+    <button id="clearBtn" onclick="clearBoard()">Clear</button>
+    <button id="modeButton" onclick="toggleMode()">
+        <i class="fas fa-adjust"></i>
+        <span id="modeText">Dark Mode</span>
+    </button>
+
+    <script>
+        const board = document.getElementById('board');
+        const dialog = document.getElementById('dialog');
+        const clearBtn = document.getElementById('clearBtn');
+        const modeButton = document.getElementById('modeButton');
+        const modeText = document.getElementById('modeText');
+        let currentPlayer = 'X';
+        let cells = Array(9).fill('');
+        let history = [];
+
+        function showDialog(message) {
+            dialog.style.display = 'block';
+            dialog.querySelector('h2').textContent = message;
+        }
+
+        function closeDialog() {
+            dialog.style.display = 'none';
+        }
+
+        function clearBoard() {
+            const result = document.getElementById('result');
+            result.textContent = ''
+        }
+
+
+        function toggleMode() {
+            document.body.classList.toggle('dark-mode');
+            const isDarkMode = document.body.classList.contains('dark-mode');
+            modeText.textContent = isDarkMode ? 'Light Mode' : 'Dark Mode';
+        }
+        function playGame(playerChoice) {
+            showWavingHandIcon(); // Display handshake icons during the loading animation
+
+            setTimeout(() => { // Simulate a delay for the handshake animation
+                const choices = ['🪨', '📄', '✂️'];
+                const computerChoice = choices[Math.floor(Math.random() * 3)];
+
+                const result = document.getElementById('result');
+
+                result.innerHTML = `You chose: ${playerChoice}<br>Sys chose: ${computerChoice}`;
+                if (playerChoice === computerChoice) {
+                    setTimeout(() => {
+                        result.textContent = `It's a tie! You both chose ${playerChoice}. Great minds think alike, but no one wins this round! 😄`;
+                    }, 1000)
+
+                } else if (
+                    (playerChoice === '🪨' && computerChoice === '✂️') ||
+                    (playerChoice === '📄' && computerChoice === '🪨') ||
+                    (playerChoice === '✂️' && computerChoice === '📄')
+                ) {
+                    setTimeout(() => {
+                        result.textContent = `Congratulations! You win! ${playerChoice} beats ${computerChoice}. Victory dance time! 💃🕺`;
+                    }, 1000)
+
+                } else {
+                    setTimeout(() => {
+                        result.textContent = `Oops! You lose! ${computerChoice} outwits ${playerChoice}. Better luck next time, it's just a game! 😅`;
+                    }, 1000)
+
+                }
+
+                // Optionally, you can hide the handshake icons after the result is displayed
+                setTimeout(() => {
+                    result.innerHTML = '';
+                }, 4000);
+            }, 1000);
+        }
+        function showWavingHandIcon() {
+            const wavingIcon = document.createElement('i');
+            wavingIcon.classList.add('fas', 'fa-hand-paper');
+            wavingIcon.id = 'waving-icon';
+            const wavingIconComp = document.createElement('i');
+            wavingIconComp.classList.add('fas', 'fa-hand-paper');
+            wavingIconComp.id = 'waving-icon';
+
+            const result = document.getElementById('result');
+            result.innerHTML = '';
+            result.appendChild(wavingIcon);
+            result.appendChild(wavingIconComp);
+        }
+    </script>
+
+</body>
+
+</html>
